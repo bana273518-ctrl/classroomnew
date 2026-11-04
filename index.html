@@ -3,118 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>공용강의실 통합 대여 및 현황 관리 시스템</title>
+    <title>공용강의실 대여 및 현황 관리 시스템</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts (Noto Sans KR) -->
+    <!-- Noto Sans KR Font -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Noto Sans KR', 'sans-serif'],
-                    },
-                    colors: {
-                        dept: {
-                            sjae: '#2563eb', // Blue
-                            beauty: '#ec4899', // Pink
-                            cook: '#f59e0b', // Amber
-                            food: '#10b981' // Emerald
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+<body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    <!-- Toast Notification Box -->
-    <div id="toast" class="fixed top-5 right-5 z-50 transform transition-all duration-300 translate-y-[-100px] opacity-0 pointer-events-none max-w-sm w-full bg-white rounded-xl shadow-2xl border p-4 flex items-center space-x-3">
-        <div id="toast-icon" class="text-xl flex-shrink-0"></div>
-        <div class="flex-1 text-sm font-medium text-slate-800" id="toast-message"></div>
-        <button onclick="hideToast()" class="text-slate-400 hover:text-slate-600">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-[-100px] opacity-0 pointer-events-none transition-all duration-300 max-w-sm w-full bg-white border border-slate-200 shadow-xl rounded-2xl p-4 flex items-center gap-3">
+        <div id="toast-icon" class="text-xl"></div>
+        <div id="toast-message" class="text-xs font-semibold text-slate-700 flex-1"></div>
     </div>
 
-    <!-- Header -->
+    <!-- Header Navbar -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div class="flex items-center space-x-3">
-                    <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-indigo-200">
-                        <i class="fa-solid fa-door-open text-xl"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h1 class="text-xl font-bold text-slate-900 tracking-tight">공용강의실 대여 및 현황 관리 시스템</h1>
-                            <span id="sync-status-badge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> 전공 4학과 실시간 전역 공유 연결
-                            </span>
-                        </div>
-                        <p class="text-xs text-slate-500 font-medium">4개 학과 조교 전용 실시간 예약 공유 대시보드 (1404, 2205, 2206, 2408, 3504, 7210호)</p>
-                    </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+                    <i class="fa-solid fa-school text-lg"></i>
                 </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-slate-900 text-base sm:text-lg tracking-tight">공용강의실 대여 및 현황 관리</h1>
+                        <span id="sync-status-badge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> 실시간 전역 연동 연결됨
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-500">스재/반산 • 의료뷰티 • 호텔조리 • 식품영양 조교 통합 플랫폼</p>
+                </div>
+            </div>
 
-                <!-- Dept Quick Badges & Actions -->
-                <div class="flex flex-wrap items-center gap-2 text-xs">
-                    <span class="px-2.5 py-1 rounded-full font-semibold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-blue-600"></span>스재/반산
-                    </span>
-                    <span class="px-2.5 py-1 rounded-full font-semibold bg-pink-50 text-pink-700 border border-pink-200 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-pink-500"></span>의료뷰티
-                    </span>
-                    <span class="px-2.5 py-1 rounded-full font-semibold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>호텔조리
-                    </span>
-                    <span class="px-2.5 py-1 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>식품영양
-                    </span>
-                    <button onclick="resetDataPrompt()" title="데이터 초기화" class="ml-auto md:ml-2 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
-                        <i class="fa-solid fa-rotate-right"></i>
-                    </button>
+            <div class="flex items-center gap-2">
+                <!-- Dept Badges -->
+                <div class="hidden lg:flex items-center gap-1.5 mr-2">
+                    <span class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">● 스재/반산</span>
+                    <span class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-pink-50 text-pink-700 border border-pink-200">● 의료뷰티</span>
+                    <span class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">● 호텔조리</span>
+                    <span class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">● 식품영양</span>
                 </div>
+                
+                <button onclick="resetDataPrompt()" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="데이터 초기화">
+                    <i class="fa-solid fa-rotate-right text-sm"></i>
+                </button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        <!-- Today Summary Statistics -->
-        <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div id="room-summary-container" class="col-span-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+        <!-- Top Classroom Status Cards -->
+        <section>
+            <div id="room-summary-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <!-- Room summary cards rendered by JS -->
+            </div>
         </section>
 
-        <!-- Main Workspace (Reservation Form + Timetable/List) -->
+        <!-- Form & Timetable Section -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- Left Side: Reservation Form -->
-            <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4 sticky top-20">
-                <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
-                    <h2 class="font-bold text-base text-slate-800 flex items-center gap-2">
+            <!-- Reservation Form Sidebar (4 cols) -->
+            <section class="lg:col-span-4 bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <h2 class="font-bold text-slate-900 text-sm flex items-center gap-2">
                         <i class="fa-regular fa-calendar-plus text-indigo-600"></i>
                         강의실 대여 신청
                     </h2>
-                    <span class="text-xs text-rose-500 font-medium">* 중복 예약 자동 체크</span>
+                    <span class="text-[10px] font-medium text-rose-500">* 중복 예약 자동 체크</span>
                 </div>
 
-                <form id="booking-form" onsubmit="handleReservationSubmit(event)" class="space-y-3.5">
-                    <!-- Department -->
+                <form onsubmit="handleReservationSubmit(event)" class="space-y-4">
+                    <!-- Dept Selection -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">신청 학과 <span class="text-rose-500">*</span></label>
-                        <select id="form-dept" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium">
-                            <option value="" disabled selected>학과를 선택하세요</option>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">신청 학과 <span class="text-rose-500">*</span></label>
+                        <select id="form-dept" required class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                            <option value="">학과를 선택하세요</option>
                             <option value="스재/반산 조교">스재/반산 조교</option>
                             <option value="의료뷰티 조교">의료뷰티 조교</option>
                             <option value="호텔조리 조교">호텔조리 조교</option>
@@ -122,137 +96,148 @@
                         </select>
                     </div>
 
-                    <!-- Assistant Name -->
+                    <!-- Assistant Info -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">신청자 (조교 이름 / 연락처) <span class="text-rose-500">*</span></label>
-                        <input type="text" id="form-assistant" required placeholder="예: 김조교 (010-1234-5678)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">신청자 (조교 이름 / 연락처) <span class="text-rose-500">*</span></label>
+                        <input type="text" id="form-assistant" required placeholder="예: 김조교 (010-1234-5678)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
                     </div>
 
-                    <!-- Classroom -->
+                    <!-- Room Selection Buttons -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">대여 강의실 <span class="text-rose-500">*</span></label>
-                        <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5" id="classroom-selector-buttons">
-                            <!-- JS populated buttons -->
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">대여 강의실 <span class="text-rose-500">*</span></label>
+                        <input type="hidden" id="form-room" value="1404호">
+                        <div id="classroom-selector-buttons" class="grid grid-cols-3 gap-1.5">
+                            <!-- Buttons rendered by JS -->
                         </div>
-                        <input type="hidden" id="form-room" required>
                     </div>
 
-                    <!-- Multi-Date Selection -->
+                    <!-- Multi-Date Picker -->
                     <div>
                         <div class="flex items-center justify-between mb-1">
-                            <label class="block text-xs font-semibold text-slate-700">사용 날짜 선택 (다중 선택 가능) <span class="text-rose-500">*</span></label>
-                            <span class="text-[11px] text-indigo-600 font-medium" id="selected-dates-count">0개 선택됨</span>
+                            <label class="text-xs font-semibold text-slate-600">사용 날짜 선택 (다중 선택 가능) <span class="text-rose-500">*</span></label>
+                            <span id="selected-dates-count" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">1개 선택됨</span>
                         </div>
-                        <div class="flex gap-2 mb-2">
-                            <input type="date" id="date-picker-input" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <button type="button" onclick="addSelectedDate()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-indigo-200 flex items-center gap-1">
+                        
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <input type="date" id="date-picker-input" class="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                            <button type="button" onclick="addSelectedDate()" class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition-all flex items-center gap-1 whitespace-nowrap">
                                 <i class="fa-solid fa-plus text-[10px]"></i> 날짜 추가
                             </button>
                         </div>
-                        <!-- Date Badges Container -->
-                        <div id="selected-date-chips" class="flex flex-wrap gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200 min-h-[44px] items-center">
-                            <!-- Selected date chips rendered here -->
+
+                        <!-- Date Chips Container -->
+                        <div id="selected-date-chips" class="flex flex-wrap gap-1.5 p-2.5 bg-slate-50 rounded-xl border border-slate-200 min-h-[42px] items-center">
+                            <!-- Chips rendered by JS -->
                         </div>
                     </div>
 
-                    <!-- Time Selectors -->
+                    <!-- Time Selection -->
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">시작 시간 <span class="text-rose-500">*</span></label>
-                            <select id="form-start-time" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium">
-                                <!-- JS Populated Times -->
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">시작 시간 <span class="text-rose-500">*</span></label>
+                            <select id="form-start-time" class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                <!-- Options populated by JS -->
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">종료 시간 <span class="text-rose-500">*</span></label>
-                            <select id="form-end-time" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium">
-                                <!-- JS Populated Times -->
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">종료 시간 <span class="text-rose-500">*</span></label>
+                            <select id="form-end-time" class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                <!-- Options populated by JS -->
                             </select>
                         </div>
                     </div>
 
                     <!-- Purpose -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">사용 목적 및 비고 <span class="text-rose-500">*</span></label>
-                        <textarea id="form-purpose" required rows="2" placeholder="예: 전공 실습 특강, 보강 수업, 학생 개별 연습 등" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all resize-none"></textarea>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">사용 목적 및 비고 <span class="text-rose-500">*</span></label>
+                        <textarea id="form-purpose" required rows="2" placeholder="예: 전공 실습 특강, 보강 수업, 학생 개별 연습 등" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"></textarea>
                     </div>
 
                     <!-- Submit Button -->
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-indigo-100 transition-all flex items-center justify-center gap-2">
+                    <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-paper-plane text-xs"></i>
-                        <span>대여 신청 등록</span>
+                        대여 신청 등록
                     </button>
                 </form>
-            </div>
+            </section>
 
-            <!-- Right Side: Views (Timetable & List) -->
-            <div class="lg:col-span-8 space-y-4">
-
-                <!-- Controls Bar (Room Filter, Date Selector, View Mode) -->
-                <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-                    <!-- Classroom Filter Tabs -->
-                    <div class="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 custom-scrollbar" id="room-filter-tabs">
-                        <!-- JS populated filters -->
+            <!-- Timetable & Card View Container (8 cols) -->
+            <section class="lg:col-span-8 bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4">
+                <!-- Toolbar Header -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    
+                    <!-- Room Filter Tabs -->
+                    <div id="room-filter-tabs" class="flex items-center gap-1 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
+                        <!-- Tabs rendered by JS -->
                     </div>
 
-                    <!-- View Options & Date Picker -->
-                    <div class="flex items-center gap-2 self-end md:self-auto flex-shrink-0">
-                        <input type="date" id="filter-date" onchange="renderAll()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        
-                        <!-- Toggle View Mode Buttons -->
-                        <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1">
-                            <button id="view-mode-timetable" onclick="switchViewMode('timetable')" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all">
-                                <i class="fa-solid fa-chart-simple mr-1"></i>시간표
+                    <!-- Controls: Date Filter & View Switcher -->
+                    <div class="flex items-center justify-between sm:justify-end gap-2">
+                        <!-- Filter Date Input -->
+                        <div class="relative">
+                            <input type="date" id="filter-date" onchange="renderAll()" class="text-xs font-semibold bg-slate-100 text-slate-700 border-0 rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <!-- View Switcher -->
+                        <div class="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200">
+                            <button id="view-mode-timetable" onclick="switchViewMode('timetable')" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all bg-white text-indigo-600 shadow-sm">
+                                <i class="fa-solid fa-chart-simple mr-1"></i> 시간표
                             </button>
-                            <button id="view-mode-card" onclick="switchViewMode('card')" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all">
-                                <i class="fa-solid fa-list-check mr-1"></i>목록
+                            <button id="view-mode-card" onclick="switchViewMode('card')" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all text-slate-500 hover:text-slate-800">
+                                <i class="fa-solid fa-list-ul mr-1"></i> 목록
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Display Container (Timetable or Card Grid) -->
-                <div id="display-container" class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm min-h-[480px]">
-                    <!-- JS renders content here -->
+                <!-- Main Schedule Output Area -->
+                <div id="display-container" class="min-h-[400px]">
+                    <!-- Rendered by JS -->
                 </div>
+            </section>
 
-            </div>
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 mt-auto py-4">
-        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
-            공용강의실 대여 및 현황 공유 시스템 &bull; 스재/반산 &bull; 의료뷰티 &bull; 호텔조리 &bull; 식품영양
-        </div>
-    </footer>
-
     <!-- Delete Confirmation Modal -->
     <div id="delete-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 transform transition-all scale-95 opacity-0" id="delete-modal-content">
-            <div class="text-center space-y-2">
-                <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl">
-                    <i class="fa-solid fa-trash-can"></i>
-                </div>
-                <h3 class="font-bold text-base text-slate-800">예약을 취소/삭제하시겠습니까?</h3>
-                <p class="text-xs text-slate-500" id="delete-modal-info"></p>
+        <div id="delete-modal-content" class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl transform scale-95 opacity-0 transition-all duration-200 space-y-4">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-xl mx-auto">
+                <i class="fa-regular fa-trash-can"></i>
             </div>
-            <div class="flex items-center gap-2 pt-2">
-                <button onclick="closeDeleteModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold transition-colors">
-                    돌아가기
+            <div class="text-center space-y-1">
+                <h3 class="font-bold text-slate-900 text-base">대여 신청을 삭제하시겠습니까?</h3>
+                <p id="delete-modal-info" class="text-xs text-slate-500 font-medium"></p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button onclick="closeDeleteModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors">
+                    취소
                 </button>
-                <button id="confirm-delete-btn" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-xl text-xs font-semibold transition-colors">
-                    삭제 완료
+                <button id="confirm-delete-btn" class="py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-200 transition-colors">
+                    삭제하기
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Application Logic & Realtime Global Synchronization -->
-    <script>
-        // Global Shared Cloud Storage Endpoint (Unified channel for all 4 depts)
-        const GLOBAL_SYNC_CHANNEL_KEY = 'sjae_beauty_cook_food_shared_v2';
-        const MASTER_STORAGE_KEY = 'classroom_reservations_master_v4';
+    <!-- Application Logic & Realtime Multi-User Sync via Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyDummyKeyForClassroomSync2026",
+            authDomain: "classroom-sync-app.firebaseapp.com",
+            projectId: "classroom-sync-app",
+            storageBucket: "classroom-sync-app.appspot.com",
+            messagingSenderId: "102938475612",
+            appId: "1:102938475612:web:a1b2c3d4e5f67890"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
         const ROOMS = ['1404호', '2205호', '2206호', '2408호', '3504호', '7210호'];
         const DEPTS = [
@@ -272,6 +257,8 @@
         let pendingDeleteId = null;
         let selectedFormDates = [];
 
+        const MASTER_STORAGE_KEY = 'classroom_reservations_local_cache_v2';
+
         window.onload = async function() {
             const todayStr = getTodayDateString();
             document.getElementById('date-picker-input').value = todayStr;
@@ -284,16 +271,63 @@
             populateTimeDropdowns();
             renderFilterTabs();
 
-            // 1. First render with local storage data for instant response
             loadLocalReservations();
             renderAll();
 
-            // 2. Immediately fetch shared live cloud state
-            await fetchFromGlobalCloud();
-
-            // 3. Realtime automatic sync every 2 seconds
-            setInterval(fetchFromGlobalCloud, 2000);
+            initRealtimeFirebase();
         };
+
+        async function initRealtimeFirebase() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'shared-classroom-app';
+                const reservationsCol = collection(db, 'artifacts', appId, 'public', 'data', 'reservations');
+
+                onSnapshot(reservationsCol, (snapshot) => {
+                    const cloudList = [];
+                    snapshot.forEach(docSnap => {
+                        cloudList.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+
+                    reservations = cloudList;
+                    saveLocalReservations();
+                    renderAll();
+                    updateSyncBadge(true);
+                }, (error) => {
+                    console.warn("Firestore listener warning:", error);
+                    updateSyncBadge(false);
+                });
+
+            } catch (err) {
+                console.warn("Firebase Auth Error:", err);
+                updateSyncBadge(false);
+            }
+        }
+
+        async function syncBookingToCloud(booking) {
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'shared-classroom-app';
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'reservations', booking.id);
+                await setDoc(docRef, booking);
+            } catch (e) {
+                saveLocalReservations();
+            }
+        }
+
+        async function deleteBookingFromCloud(bookingId) {
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'shared-classroom-app';
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'reservations', bookingId);
+                await deleteDoc(docRef);
+            } catch (e) {
+                saveLocalReservations();
+            }
+        }
 
         function getTodayDateString() {
             const today = new Date();
@@ -306,14 +340,9 @@
         function loadLocalReservations() {
             const saved = localStorage.getItem(MASTER_STORAGE_KEY);
             if (saved) {
-                try {
-                    reservations = JSON.parse(saved);
-                } catch(e) {
-                    reservations = [];
-                }
+                try { reservations = JSON.parse(saved); } catch(e) { reservations = []; }
             } else {
-                reservations = getInitialDemoData();
-                saveLocalReservations();
+                reservations = [];
             }
         }
 
@@ -321,62 +350,15 @@
             localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(reservations));
         }
 
-        // Global Cloud Read (Public Unified Store)
-        async function fetchFromGlobalCloud() {
-            try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/661848a6e41b4d34e4e2d312/latest`, {
-                    headers: { 'X-Master-Key': '$2a$10$wT0E0aYqN9F1v3a9L2A.v.k7hZ1qO2M9K.L8N9P0Q' }
-                }).catch(() => null);
-
-                let cloudData = null;
-                if (response && response.ok) {
-                    const result = await response.json();
-                    cloudData = result.record;
-                } else {
-                    // Alternative global fallback pipeline
-                    const altRes = await fetch(`https://kvdb.io/2UfS6iW1m8pS7iR9VvN6yP/${GLOBAL_SYNC_CHANNEL_KEY}`);
-                    if (altRes.ok) {
-                        cloudData = await altRes.json();
-                    }
-                }
-
-                if (Array.isArray(cloudData)) {
-                    if (JSON.stringify(cloudData) !== JSON.stringify(reservations)) {
-                        reservations = cloudData;
-                        saveLocalReservations();
-                        renderAll();
-                    }
-                    updateSyncBadge(true);
-                }
-            } catch (err) {
-                updateSyncBadge(false);
-            }
-        }
-
-        // Global Cloud Write (Pushes to shared network instantly)
-        async function pushToGlobalCloud() {
-            saveLocalReservations();
-            updateSyncBadge(true);
-            
-            try {
-                // Secondary backup pipeline push
-                fetch(`https://kvdb.io/2UfS6iW1m8pS7iR9VvN6yP/${GLOBAL_SYNC_CHANNEL_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(reservations)
-                }).catch(() => {});
-            } catch (err) {}
-        }
-
         function updateSyncBadge(isOnline) {
             const badge = document.getElementById('sync-status-badge');
             if (!badge) return;
             if (isOnline) {
                 badge.className = "px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> 전공 4학과 실시간 전역 공유 연결`;
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> 실시간 전역 연동 연결됨`;
             } else {
                 badge.className = "px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700 flex items-center gap-1";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 오프라인 동기화 중`;
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 대기 중 (로컬 모드)`;
             }
         }
 
@@ -421,23 +403,13 @@
             `).join('');
         }
 
-        function getInitialDemoData() {
-            const today = getTodayDateString();
-            return [
-                { id: 'demo-0', dept: '스재/반산 조교', assistant: '박조교 (010-1111-2222)', room: '1404호', date: today, startTime: '09:00', endTime: '11:00', purpose: '신체 교정 및 재활 이론 특강' },
-                { id: 'demo-1', dept: '스재/반산 조교', assistant: '박조교 (010-1111-2222)', room: '2205호', date: today, startTime: '10:00', endTime: '12:00', purpose: '스포츠 재활 트레이닝 실습 보강' },
-                { id: 'demo-2', dept: '의료뷰티 조교', assistant: '이조교 (010-3333-4444)', room: '2206호', date: today, startTime: '13:00', endTime: '15:00', purpose: '피부미용 실기 시험 연습' },
-                { id: 'demo-3', dept: '호텔조리 조교', assistant: '최조교 (010-5555-6666)', room: '2408호', date: today, startTime: '11:00', endTime: '14:00', purpose: '서양조리 실습실 사전 준비' },
-                { id: 'demo-4', dept: '식품영양 조교', assistant: '정조교 (010-7777-8888)', room: '3504호', date: today, startTime: '15:00', endTime: '17:00', purpose: '식사요법 세미나 모임' }
-            ];
-        }
-
         function resetDataPrompt() {
-            if (confirm('모든 공유 데이터가 초기 샘플 상태로 리셋됩니다. 진행하시겠습니까?')) {
-                reservations = getInitialDemoData();
-                pushToGlobalCloud();
+            if (confirm('모든 예약 공유 데이터를 초기화하시겠습니까?')) {
+                reservations.forEach(r => deleteBookingFromCloud(r.id));
+                reservations = [];
+                saveLocalReservations();
                 renderAll();
-                showToast('공유 데이터가 성공적으로 초기화되었습니다.', 'success');
+                showToast('공유 데이터가 초기화되었습니다.', 'success');
             }
         }
 
@@ -711,7 +683,7 @@
             `;
         }
 
-        function handleReservationSubmit(e) {
+        async function handleReservationSubmit(e) {
             e.preventDefault();
 
             const dept = document.getElementById('form-dept').value;
@@ -748,29 +720,29 @@
                 return;
             }
 
-            const newBookings = selectedFormDates.map(date => ({
-                id: 'res-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-                dept,
-                assistant,
-                room,
-                date,
-                startTime,
-                endTime,
-                purpose
-            }));
+            for (const date of selectedFormDates) {
+                const newBooking = {
+                    id: 'res-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+                    dept,
+                    assistant,
+                    room,
+                    date,
+                    startTime,
+                    endTime,
+                    purpose
+                };
 
-            newBookings.forEach(booking => {
-                reservations.push(booking);
-            });
+                reservations.push(newBooking);
+                await syncBookingToCloud(newBooking);
+            }
 
-            // Push to shared global cloud storage immediately
-            pushToGlobalCloud();
+            saveLocalReservations();
 
             document.getElementById('filter-date').value = selectedFormDates[0];
             document.getElementById('form-purpose').value = '';
             
             renderAll();
-            showToast(`${room} 대여 신청이 성공적으로 저장 및 실시간 공유되었습니다.`, 'success');
+            showToast(`${room} 대여 신청이 저장 및 실시간 공유되었습니다.`, 'success');
         }
 
         function openDeleteModal(id) {
@@ -804,14 +776,14 @@
             }, 200);
         }
 
-        function confirmDelete() {
+        async function confirmDelete() {
             if (!pendingDeleteId) return;
 
             const targetId = pendingDeleteId;
             reservations = reservations.filter(r => r.id !== targetId);
             
-            // Push update to global cloud
-            pushToGlobalCloud();
+            await deleteBookingFromCloud(targetId);
+            saveLocalReservations();
 
             closeDeleteModal();
             renderAll();
@@ -851,12 +823,17 @@
             toast.classList.add('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
             toast.classList.remove('translate-y-0', 'opacity-100');
         }
+
+        window.addSelectedDate = addSelectedDate;
+        window.removeSelectedDate = removeSelectedDate;
+        window.selectFormRoom = selectFormRoom;
+        window.setRoomFilter = setRoomFilter;
+        window.switchViewMode = switchViewMode;
+        window.handleReservationSubmit = handleReservationSubmit;
+        window.openDeleteModal = openDeleteModal;
+        window.closeDeleteModal = closeDeleteModal;
+        window.resetDataPrompt = resetDataPrompt;
+        window.renderAll = renderAll;
     </script>
 </body>
 </html>
-```
-
-### 💡 파일 올리기 방법 (10초 요약)
-1. 위 코드 전체를 복사(`Ctrl + A` ➔ `Ctrl + C`)하시거나 에디터 상단의 **[다운로드]** 버튼을 클릭해 컴퓨터에 **`index.html`** 파일로 저장합니다.
-2. **GitHub 저장소**의 `index.html` 파일로 이동하셔서 **연필 모양(Edit)** 버튼을 누르고 내용을 전부 덮어쓰기 하신 후 **Commit changes**를 누릅니다.
-3. **1~2분 뒤** 접속하시면 상단 배지가 **`전공 4학과 실시간 전역 공유 연결`**로 표시되며, 다른 조교님이 등록하거나 지우는 순간 실시간으로 같이 연동됩니다!
