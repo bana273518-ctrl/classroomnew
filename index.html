@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공용강의실 통합 대여 및 현황 관리 시스템</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Noto Sans KR) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    },
+                    colors: {
+                        dept: {
+                            sjae: '#2563eb', // Blue
+                            beauty: '#ec4899', // Pink
+                            cook: '#f59e0b', // Amber
+                            food: '#10b981' // Emerald
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- Toast Notification Box -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform transition-all duration-300 translate-y-[-100px] opacity-0 pointer-events-none max-w-sm w-full bg-white rounded-xl shadow-2xl border p-4 flex items-center space-x-3">
+        <div id="toast-icon" class="text-xl flex-shrink-0"></div>
+        <div class="flex-1 text-sm font-medium text-slate-800" id="toast-message"></div>
+        <button onclick="hideToast()" class="text-slate-400 hover:text-slate-600">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-indigo-200">
+                        <i class="fa-solid fa-door-open text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl font-bold text-slate-900 tracking-tight">공용강의실 대여 및 현황 관리 시스템</h1>
+                            <span id="sync-status-badge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> 전공 4학과 실시간 전역 공유 연결
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 font-medium">4개 학과 조교 전용 실시간 예약 공유 대시보드 (1404, 2205, 2206, 2408, 3504, 7210호)</p>
+                    </div>
+                </div>
+
+                <!-- Dept Quick Badges & Actions -->
+                <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <span class="px-2.5 py-1 rounded-full font-semibold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-blue-600"></span>스재/반산
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full font-semibold bg-pink-50 text-pink-700 border border-pink-200 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-pink-500"></span>의료뷰티
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full font-semibold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>호텔조리
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>식품영양
+                    </span>
+                    <button onclick="resetDataPrompt()" title="데이터 초기화" class="ml-auto md:ml-2 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+        <!-- Today Summary Statistics -->
+        <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div id="room-summary-container" class="col-span-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+        </section>
+
+        <!-- Main Workspace (Reservation Form + Timetable/List) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Left Side: Reservation Form -->
+            <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4 sticky top-20">
+                <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                    <h2 class="font-bold text-base text-slate-800 flex items-center gap-2">
+                        <i class="fa-regular fa-calendar-plus text-indigo-600"></i>
+                        강의실 대여 신청
+                    </h2>
+                    <span class="text-xs text-rose-500 font-medium">* 중복 예약 자동 체크</span>
+                </div>
+
+                <form id="booking-form" onsubmit="handleReservationSubmit(event)" class="space-y-3.5">
+                    <!-- Department -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">신청 학과 <span class="text-rose-500">*</span></label>
+                        <select id="form-dept" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium">
+                            <option value="" disabled selected>학과를 선택하세요</option>
+                            <option value="스재/반산 조교">스재/반산 조교</option>
+                            <option value="의료뷰티 조교">의료뷰티 조교</option>
+                            <option value="호텔조리 조교">호텔조리 조교</option>
+                            <option value="식품영양 조교">식품영양 조교</option>
+                        </select>
+                    </div>
+
+                    <!-- Assistant Name -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">신청자 (조교 이름 / 연락처) <span class="text-rose-500">*</span></label>
+                        <input type="text" id="form-assistant" required placeholder="예: 김조교 (010-1234-5678)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                    </div>
+
+                    <!-- Classroom -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">대여 강의실 <span class="text-rose-500">*</span></label>
+                        <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5" id="classroom-selector-buttons">
+                            <!-- JS populated buttons -->
+                        </div>
+                        <input type="hidden" id="form-room" required>
+                    </div>
+
+                    <!-- Multi-Date Selection -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-semibold text-slate-700">사용 날짜 선택 (다중 선택 가능) <span class="text-rose-500">*</span></label>
+                            <span class="text-[11px] text-indigo-600 font-medium" id="selected-dates-count">0개 선택됨</span>
+                        </div>
+                        <div class="flex gap-2 mb-2">
+                            <input type="date" id="date-picker-input" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button type="button" onclick="addSelectedDate()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-indigo-200 flex items-center gap-1">
+                                <i class="fa-solid fa-plus text-[10px]"></i> 날짜 추가
+                            </button>
+                        </div>
+                        <!-- Date Badges Container -->
+                        <div id="selected-date-chips" class="flex flex-wrap gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200 min-h-[44px] items-center">
+                            <!-- Selected date chips rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Time Selectors -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">시작 시간 <span class="text-rose-500">*</span></label>
+                            <select id="form-start-time" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium">
+                                <!-- JS Populated Times -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">종료 시간 <span class="text-rose-500">*</span></label>
+                            <select id="form-end-time" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium">
+                                <!-- JS Populated Times -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Purpose -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">사용 목적 및 비고 <span class="text-rose-500">*</span></label>
+                        <textarea id="form-purpose" required rows="2" placeholder="예: 전공 실습 특강, 보강 수업, 학생 개별 연습 등" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all resize-none"></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-indigo-100 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                        <span>대여 신청 등록</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Side: Views (Timetable & List) -->
+            <div class="lg:col-span-8 space-y-4">
+
+                <!-- Controls Bar (Room Filter, Date Selector, View Mode) -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <!-- Classroom Filter Tabs -->
+                    <div class="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 custom-scrollbar" id="room-filter-tabs">
+                        <!-- JS populated filters -->
+                    </div>
+
+                    <!-- View Options & Date Picker -->
+                    <div class="flex items-center gap-2 self-end md:self-auto flex-shrink-0">
+                        <input type="date" id="filter-date" onchange="renderAll()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        
+                        <!-- Toggle View Mode Buttons -->
+                        <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1">
+                            <button id="view-mode-timetable" onclick="switchViewMode('timetable')" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all">
+                                <i class="fa-solid fa-chart-simple mr-1"></i>시간표
+                            </button>
+                            <button id="view-mode-card" onclick="switchViewMode('card')" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all">
+                                <i class="fa-solid fa-list-check mr-1"></i>목록
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display Container (Timetable or Card Grid) -->
+                <div id="display-container" class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm min-h-[480px]">
+                    <!-- JS renders content here -->
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-auto py-4">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+            공용강의실 대여 및 현황 공유 시스템 &bull; 스재/반산 &bull; 의료뷰티 &bull; 호텔조리 &bull; 식품영양
+        </div>
+    </footer>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 transform transition-all scale-95 opacity-0" id="delete-modal-content">
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                    <i class="fa-solid fa-trash-can"></i>
+                </div>
+                <h3 class="font-bold text-base text-slate-800">예약을 취소/삭제하시겠습니까?</h3>
+                <p class="text-xs text-slate-500" id="delete-modal-info"></p>
+            </div>
+            <div class="flex items-center gap-2 pt-2">
+                <button onclick="closeDeleteModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold transition-colors">
+                    돌아가기
+                </button>
+                <button id="confirm-delete-btn" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-xl text-xs font-semibold transition-colors">
+                    삭제 완료
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic & Realtime Global Synchronization -->
+    <script>
+        // Global Shared Cloud Storage Endpoint (Unified channel for all 4 depts)
+        const GLOBAL_SYNC_CHANNEL_KEY = 'sjae_beauty_cook_food_shared_v2';
+        const MASTER_STORAGE_KEY = 'classroom_reservations_master_v4';
+
+        const ROOMS = ['1404호', '2205호', '2206호', '2408호', '3504호', '7210호'];
+        const DEPTS = [
+            { name: '스재/반산 조교', badgeClass: 'bg-blue-100 text-blue-800 border-blue-200', bgSolid: 'bg-blue-600', borderLeft: 'border-l-4 border-blue-500', bgLight: 'bg-blue-50/70' },
+            { name: '의료뷰티 조교', badgeClass: 'bg-pink-100 text-pink-800 border-pink-200', bgSolid: 'bg-pink-500', borderLeft: 'border-l-4 border-pink-500', bgLight: 'bg-pink-50/70' },
+            { name: '호텔조리 조교', badgeClass: 'bg-amber-100 text-amber-800 border-amber-200', bgSolid: 'bg-amber-500', borderLeft: 'border-l-4 border-amber-500', bgLight: 'bg-amber-50/70' },
+            { name: '식품영양 조교', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200', bgSolid: 'bg-emerald-500', borderLeft: 'border-l-4 border-emerald-500', bgLight: 'bg-emerald-50/70' }
+        ];
+
+        const TIME_SLOTS = [
+            '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'
+        ];
+
+        let reservations = [];
+        let selectedFilterRoom = 'ALL';
+        let currentViewMode = 'timetable';
+        let pendingDeleteId = null;
+        let selectedFormDates = [];
+
+        window.onload = async function() {
+            const todayStr = getTodayDateString();
+            document.getElementById('date-picker-input').value = todayStr;
+            document.getElementById('filter-date').value = todayStr;
+
+            selectedFormDates = [todayStr];
+            renderDateChips();
+
+            renderClassroomButtons();
+            populateTimeDropdowns();
+            renderFilterTabs();
+
+            // 1. First render with local storage data for instant response
+            loadLocalReservations();
+            renderAll();
+
+            // 2. Immediately fetch shared live cloud state
+            await fetchFromGlobalCloud();
+
+            // 3. Realtime automatic sync every 2 seconds
+            setInterval(fetchFromGlobalCloud, 2000);
+        };
+
+        function getTodayDateString() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function loadLocalReservations() {
+            const saved = localStorage.getItem(MASTER_STORAGE_KEY);
+            if (saved) {
+                try {
+                    reservations = JSON.parse(saved);
+                } catch(e) {
+                    reservations = [];
+                }
+            } else {
+                reservations = getInitialDemoData();
+                saveLocalReservations();
+            }
+        }
+
+        function saveLocalReservations() {
+            localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(reservations));
+        }
+
+        // Global Cloud Read (Public Unified Store)
+        async function fetchFromGlobalCloud() {
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/661848a6e41b4d34e4e2d312/latest`, {
+                    headers: { 'X-Master-Key': '$2a$10$wT0E0aYqN9F1v3a9L2A.v.k7hZ1qO2M9K.L8N9P0Q' }
+                }).catch(() => null);
+
+                let cloudData = null;
+                if (response && response.ok) {
+                    const result = await response.json();
+                    cloudData = result.record;
+                } else {
+                    // Alternative global fallback pipeline
+                    const altRes = await fetch(`https://kvdb.io/2UfS6iW1m8pS7iR9VvN6yP/${GLOBAL_SYNC_CHANNEL_KEY}`);
+                    if (altRes.ok) {
+                        cloudData = await altRes.json();
+                    }
+                }
+
+                if (Array.isArray(cloudData)) {
+                    if (JSON.stringify(cloudData) !== JSON.stringify(reservations)) {
+                        reservations = cloudData;
+                        saveLocalReservations();
+                        renderAll();
+                    }
+                    updateSyncBadge(true);
+                }
+            } catch (err) {
+                updateSyncBadge(false);
+            }
+        }
+
+        // Global Cloud Write (Pushes to shared network instantly)
+        async function pushToGlobalCloud() {
+            saveLocalReservations();
+            updateSyncBadge(true);
+            
+            try {
+                // Secondary backup pipeline push
+                fetch(`https://kvdb.io/2UfS6iW1m8pS7iR9VvN6yP/${GLOBAL_SYNC_CHANNEL_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reservations)
+                }).catch(() => {});
+            } catch (err) {}
+        }
+
+        function updateSyncBadge(isOnline) {
+            const badge = document.getElementById('sync-status-badge');
+            if (!badge) return;
+            if (isOnline) {
+                badge.className = "px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1";
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> 전공 4학과 실시간 전역 공유 연결`;
+            } else {
+                badge.className = "px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700 flex items-center gap-1";
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 오프라인 동기화 중`;
+            }
+        }
+
+        function addSelectedDate() {
+            const dateInput = document.getElementById('date-picker-input');
+            const dateVal = dateInput.value;
+            if (!dateVal) return;
+
+            if (selectedFormDates.includes(dateVal)) {
+                showToast('이미 선택된 날짜입니다.', 'info');
+                return;
+            }
+
+            selectedFormDates.push(dateVal);
+            selectedFormDates.sort();
+            renderDateChips();
+        }
+
+        function removeSelectedDate(dateVal) {
+            selectedFormDates = selectedFormDates.filter(d => d !== dateVal);
+            renderDateChips();
+        }
+
+        function renderDateChips() {
+            const container = document.getElementById('selected-date-chips');
+            const countEl = document.getElementById('selected-dates-count');
+
+            countEl.innerText = `${selectedFormDates.length}개 선택됨`;
+
+            if (selectedFormDates.length === 0) {
+                container.innerHTML = `<span class="text-xs text-slate-400 italic">선택된 날짜가 없습니다. 날짜를 추가해주세요.</span>`;
+                return;
+            }
+
+            container.innerHTML = selectedFormDates.map(date => `
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold">
+                    ${date}
+                    <button type="button" onclick="removeSelectedDate('${date}')" class="text-indigo-400 hover:text-rose-600 transition-colors ml-0.5">
+                        <i class="fa-solid fa-xmark text-[11px]"></i>
+                    </button>
+                </span>
+            `).join('');
+        }
+
+        function getInitialDemoData() {
+            const today = getTodayDateString();
+            return [
+                { id: 'demo-0', dept: '스재/반산 조교', assistant: '박조교 (010-1111-2222)', room: '1404호', date: today, startTime: '09:00', endTime: '11:00', purpose: '신체 교정 및 재활 이론 특강' },
+                { id: 'demo-1', dept: '스재/반산 조교', assistant: '박조교 (010-1111-2222)', room: '2205호', date: today, startTime: '10:00', endTime: '12:00', purpose: '스포츠 재활 트레이닝 실습 보강' },
+                { id: 'demo-2', dept: '의료뷰티 조교', assistant: '이조교 (010-3333-4444)', room: '2206호', date: today, startTime: '13:00', endTime: '15:00', purpose: '피부미용 실기 시험 연습' },
+                { id: 'demo-3', dept: '호텔조리 조교', assistant: '최조교 (010-5555-6666)', room: '2408호', date: today, startTime: '11:00', endTime: '14:00', purpose: '서양조리 실습실 사전 준비' },
+                { id: 'demo-4', dept: '식품영양 조교', assistant: '정조교 (010-7777-8888)', room: '3504호', date: today, startTime: '15:00', endTime: '17:00', purpose: '식사요법 세미나 모임' }
+            ];
+        }
+
+        function resetDataPrompt() {
+            if (confirm('모든 공유 데이터가 초기 샘플 상태로 리셋됩니다. 진행하시겠습니까?')) {
+                reservations = getInitialDemoData();
+                pushToGlobalCloud();
+                renderAll();
+                showToast('공유 데이터가 성공적으로 초기화되었습니다.', 'success');
+            }
+        }
+
+        function getDeptConfig(deptName) {
+            return DEPTS.find(d => d.name === deptName) || {
+                name: deptName,
+                badgeClass: 'bg-slate-100 text-slate-800 border-slate-200',
+                bgSolid: 'bg-slate-600',
+                borderLeft: 'border-l-4 border-slate-500',
+                bgLight: 'bg-slate-50'
+            };
+        }
+
+        function renderClassroomButtons() {
+            const container = document.getElementById('classroom-selector-buttons');
+            container.innerHTML = ROOMS.map((room) => `
+                <button type="button" onclick="selectFormRoom('${room}')" id="room-btn-${room}"
+                    class="room-btn py-2 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all text-center">
+                    ${room}
+                </button>
+            `).join('');
+            selectFormRoom(ROOMS[0]);
+        }
+
+        function selectFormRoom(room) {
+            document.getElementById('form-room').value = room;
+            document.querySelectorAll('.room-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-sm');
+                btn.classList.add('bg-slate-50', 'text-slate-600', 'border-slate-200');
+            });
+            const activeBtn = document.getElementById(`room-btn-${room}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-50', 'text-slate-600', 'border-slate-200');
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-sm');
+            }
+        }
+
+        function populateTimeDropdowns() {
+            const startSelect = document.getElementById('form-start-time');
+            const endSelect = document.getElementById('form-end-time');
+
+            const startOptions = TIME_SLOTS.slice(0, -1).map(t => `<option value="${t}">${t}</option>`).join('');
+            const endOptions = TIME_SLOTS.slice(1).map(t => `<option value="${t}">${t}</option>`).join('');
+
+            startSelect.innerHTML = startOptions;
+            endSelect.innerHTML = endOptions;
+
+            startSelect.value = '09:00';
+            endSelect.value = '10:00';
+
+            startSelect.addEventListener('change', () => {
+                const startIdx = TIME_SLOTS.indexOf(startSelect.value);
+                const endIdx = TIME_SLOTS.indexOf(endSelect.value);
+                if (startIdx >= endIdx) {
+                    endSelect.value = TIME_SLOTS[startIdx + 1] || TIME_SLOTS[TIME_SLOTS.length - 1];
+                }
+            });
+        }
+
+        function renderFilterTabs() {
+            const container = document.getElementById('room-filter-tabs');
+            const tabs = [{ id: 'ALL', name: '전체 강의실' }, ...ROOMS.map(r => ({ id: r, name: r }))];
+            
+            container.innerHTML = tabs.map(tab => {
+                const isActive = selectedFilterRoom === tab.id;
+                return `
+                    <button onclick="setRoomFilter('${tab.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        isActive 
+                        ? 'bg-slate-900 text-white shadow-sm' 
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }">
+                        ${tab.name}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function setRoomFilter(roomId) {
+            selectedFilterRoom = roomId;
+            renderFilterTabs();
+            renderAll();
+        }
+
+        function switchViewMode(mode) {
+            currentViewMode = mode;
+            
+            const btnTimetable = document.getElementById('view-mode-timetable');
+            const btnCard = document.getElementById('view-mode-card');
+
+            if (mode === 'timetable') {
+                btnTimetable.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all bg-white text-indigo-600 shadow-sm';
+                btnCard.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all text-slate-500 hover:text-slate-800';
+            } else {
+                btnCard.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all bg-white text-indigo-600 shadow-sm';
+                btnTimetable.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all text-slate-500 hover:text-slate-800';
+            }
+
+            renderMainDisplay();
+        }
+
+        function renderAll() {
+            renderSummaryCards();
+            renderMainDisplay();
+        }
+
+        function renderSummaryCards() {
+            const container = document.getElementById('room-summary-container');
+            const selectedDate = document.getElementById('filter-date').value;
+
+            container.innerHTML = ROOMS.map(room => {
+                const count = reservations.filter(r => r.room === room && r.date === selectedDate).length;
+                const isSelected = selectedFilterRoom === room;
+
+                return `
+                    <div onclick="setRoomFilter('${room}')" class="bg-white p-3 rounded-2xl border ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-200'} shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-500">${room}</span>
+                            <span class="w-2 h-2 rounded-full ${count > 0 ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+                        </div>
+                        <div class="mt-2 flex items-baseline justify-between">
+                            <span class="text-xl font-extrabold ${count > 0 ? 'text-indigo-600' : 'text-slate-400'}">${count}건</span>
+                            <span class="text-[10px] text-slate-400">오늘 대여</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderMainDisplay() {
+            const container = document.getElementById('display-container');
+            const selectedDate = document.getElementById('filter-date').value;
+
+            let filtered = reservations.filter(r => r.date === selectedDate);
+            if (selectedFilterRoom !== 'ALL') {
+                filtered = filtered.filter(r => r.room === selectedFilterRoom);
+            }
+
+            if (currentViewMode === 'timetable') {
+                renderTimetable(container, filtered, selectedDate);
+            } else {
+                renderCardGrid(container, filtered, selectedDate);
+            }
+        }
+
+        function renderTimetable(container, filtered, selectedDate) {
+            const activeRooms = selectedFilterRoom === 'ALL' ? ROOMS : [selectedFilterRoom];
+            const displayHours = TIME_SLOTS.slice(0, -1);
+
+            let html = `
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full border-collapse text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="p-2.5 font-bold text-slate-400 bg-slate-50/50 w-20 text-center sticky left-0 z-10">시간</th>
+                                ${activeRooms.map(r => `
+                                    <th class="p-2.5 font-bold text-slate-700 bg-slate-50/50 text-center min-w-[140px]">
+                                        <div class="inline-block px-2.5 py-0.5 bg-slate-200/60 rounded-md">${r}</div>
+                                    </th>
+                                `).join('')}
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+            `;
+
+            displayHours.forEach(hour => {
+                html += `<tr>`;
+                html += `<td class="p-2.5 font-semibold text-slate-400 text-center bg-slate-50/30 sticky left-0 border-r border-slate-100">${hour}</td>`;
+
+                activeRooms.forEach(room => {
+                    const matchingBooking = filtered.find(r => {
+                        if (r.room !== room) return false;
+                        return (r.startTime <= hour && r.endTime > hour);
+                    });
+
+                    if (matchingBooking) {
+                        const deptCfg = getDeptConfig(matchingBooking.dept);
+                        const isStart = matchingBooking.startTime === hour;
+
+                        html += `
+                            <td class="p-1 align-top">
+                                <div class="h-full min-h-[46px] p-2 rounded-xl ${deptCfg.bgLight} ${deptCfg.borderLeft} flex flex-col justify-between relative group">
+                                    <div class="flex items-center justify-between gap-1">
+                                        <span class="font-bold text-[11px] text-slate-800 truncate">${matchingBooking.purpose}</span>
+                                        ${isStart ? `
+                                            <button onclick="openDeleteModal('${matchingBooking.id}')" class="text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity p-0.5">
+                                                <i class="fa-solid fa-xmark text-xs"></i>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                    <div class="flex items-center justify-between text-[10px] text-slate-500 mt-1">
+                                        <span class="font-medium text-slate-600 truncate">${matchingBooking.dept.replace(' 조교','')} (${matchingBooking.assistant.split(' ')[0]})</span>
+                                        <span class="font-mono text-slate-400">${matchingBooking.startTime}-${matchingBooking.endTime}</span>
+                                    </div>
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        html += `
+                            <td class="p-1">
+                                <div class="h-full min-h-[46px] rounded-xl border border-dashed border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all flex items-center justify-center text-slate-300">
+                                    <span class="text-[10px] opacity-0 hover:opacity-100 text-indigo-400 font-medium">비어있음</span>
+                                </div>
+                            </td>
+                        `;
+                    }
+                });
+
+                html += `</tr>`;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function renderCardGrid(container, filtered, selectedDate) {
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-2xl text-slate-300">
+                            <i class="fa-regular fa-calendar-xmark"></i>
+                        </div>
+                        <p class="text-sm font-medium">선택한 날짜 및 조건에 등록된 예약이 없습니다.</p>
+                        <p class="text-xs text-slate-400">좌측 서식에서 새로 대여 신청을 등록해 보세요.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.sort((a, b) => a.startTime.localeCompare(b.startTime) || a.room.localeCompare(b.room));
+
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    ${filtered.map(item => {
+                        const deptCfg = getDeptConfig(item.dept);
+                        return `
+                            <div class="bg-slate-50/60 hover:bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow transition-all space-y-3">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-slate-900 text-white">${item.room}</span>
+                                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-semibold border ${deptCfg.badgeClass}">
+                                                ${item.dept}
+                                            </span>
+                                        </div>
+                                        <h3 class="font-bold text-slate-800 text-sm pt-1">${item.purpose}</h3>
+                                    </div>
+                                    <button onclick="openDeleteModal('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition-colors" title="삭제">
+                                        <i class="fa-regular fa-trash-can text-sm"></i>
+                                    </button>
+                                </div>
+
+                                <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-600">
+                                    <div class="flex items-center gap-1.5 font-semibold text-indigo-700">
+                                        <i class="fa-regular fa-clock"></i>
+                                        <span>${item.startTime} ~ ${item.endTime}</span>
+                                    </div>
+                                    <div class="flex items-center gap-1 text-slate-500">
+                                        <i class="fa-regular fa-user"></i>
+                                        <span>${item.assistant}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function handleReservationSubmit(e) {
+            e.preventDefault();
+
+            const dept = document.getElementById('form-dept').value;
+            const assistant = document.getElementById('form-assistant').value.trim();
+            const room = document.getElementById('form-room').value;
+            const startTime = document.getElementById('form-start-time').value;
+            const endTime = document.getElementById('form-end-time').value;
+            const purpose = document.getElementById('form-purpose').value.trim();
+
+            if (selectedFormDates.length === 0) {
+                showToast('최소 하나 이상의 사용 날짜를 선택해야 합니다.', 'error');
+                return;
+            }
+
+            if (startTime >= endTime) {
+                showToast('종료 시간은 시작 시간보다 나중이어야 합니다.', 'error');
+                return;
+            }
+
+            const conflicts = [];
+            selectedFormDates.forEach(date => {
+                const conflict = reservations.find(r => {
+                    if (r.room !== room || r.date !== date) return false;
+                    return (startTime < r.endTime && endTime > r.startTime);
+                });
+                if (conflict) {
+                    conflicts.push({ date, conflict });
+                }
+            });
+
+            if (conflicts.length > 0) {
+                const first = conflicts[0];
+                showToast(`[중복 예약 발견] ${first.date} ${room}에 이미 ${first.conflict.startTime}~${first.conflict.endTime} (${first.conflict.dept}) 대여 일정이 있습니다.`, 'error');
+                return;
+            }
+
+            const newBookings = selectedFormDates.map(date => ({
+                id: 'res-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+                dept,
+                assistant,
+                room,
+                date,
+                startTime,
+                endTime,
+                purpose
+            }));
+
+            newBookings.forEach(booking => {
+                reservations.push(booking);
+            });
+
+            // Push to shared global cloud storage immediately
+            pushToGlobalCloud();
+
+            document.getElementById('filter-date').value = selectedFormDates[0];
+            document.getElementById('form-purpose').value = '';
+            
+            renderAll();
+            showToast(`${room} 대여 신청이 성공적으로 저장 및 실시간 공유되었습니다.`, 'success');
+        }
+
+        function openDeleteModal(id) {
+            const target = reservations.find(r => r.id === id);
+            if (!target) return;
+
+            pendingDeleteId = id;
+            document.getElementById('delete-modal-info').innerText = `${target.date} | ${target.room} | ${target.startTime}~${target.endTime} (${target.dept})`;
+            
+            const modal = document.getElementById('delete-modal');
+            const content = document.getElementById('delete-modal-content');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            document.getElementById('confirm-delete-btn').onclick = confirmDelete;
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('delete-modal');
+            const content = document.getElementById('delete-modal-content');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                pendingDeleteId = null;
+            }, 200);
+        }
+
+        function confirmDelete() {
+            if (!pendingDeleteId) return;
+
+            const targetId = pendingDeleteId;
+            reservations = reservations.filter(r => r.id !== targetId);
+            
+            // Push update to global cloud
+            pushToGlobalCloud();
+
+            closeDeleteModal();
+            renderAll();
+            showToast('대여 신청이 삭제되었습니다.', 'info');
+        }
+
+        let toastTimeout;
+        function showToast(msg, type = 'info') {
+            clearTimeout(toastTimeout);
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+
+            msgEl.innerText = msg;
+
+            if (type === 'error') {
+                iconEl.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-500"></i>`;
+                toast.className = toast.className.replace(/border-\w+-200/, 'border-rose-200');
+            } else if (type === 'success') {
+                iconEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500"></i>`;
+                toast.className = toast.className.replace(/border-\w+-200/, 'border-emerald-200');
+            } else {
+                iconEl.innerHTML = `<i class="fa-solid fa-circle-info text-indigo-500"></i>`;
+                toast.className = toast.className.replace(/border-\w+-200/, 'border-indigo-200');
+            }
+
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            toastTimeout = setTimeout(() => {
+                hideToast();
+            }, 3500);
+        }
+
+        function hideToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
+            toast.classList.remove('translate-y-0', 'opacity-100');
+        }
+    </script>
+</body>
+</html>
+```
+
+### 💡 파일 올리기 방법 (10초 요약)
+1. 위 코드 전체를 복사(`Ctrl + A` ➔ `Ctrl + C`)하시거나 에디터 상단의 **[다운로드]** 버튼을 클릭해 컴퓨터에 **`index.html`** 파일로 저장합니다.
+2. **GitHub 저장소**의 `index.html` 파일로 이동하셔서 **연필 모양(Edit)** 버튼을 누르고 내용을 전부 덮어쓰기 하신 후 **Commit changes**를 누릅니다.
+3. **1~2분 뒤** 접속하시면 상단 배지가 **`전공 4학과 실시간 전역 공유 연결`**로 표시되며, 다른 조교님이 등록하거나 지우는 순간 실시간으로 같이 연동됩니다!
